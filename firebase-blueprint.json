@@ -1,0 +1,548 @@
+{
+  "entities": {
+    "Store": {
+      "title": "Store",
+      "description": "Partner stores whose prices are aggregated",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "nameRu": { "type": "string" },
+        "nameAm": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "slug": { "type": "string" },
+        "logo": { "type": "string", "format": "uri" },
+        "baseUrl": { "type": "string", "format": "uri" },
+        "searchUrl": { "type": "string", "format": "uri" },
+        "website": { "type": "string", "format": "uri" },
+        "description": { "type": "string" },
+        "descRu": { "type": "string" },
+        "descAm": { "type": "string" },
+        "descEn": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "order": { "type": "number" },
+        "productCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "baseUrl"]
+    },
+    "Brand": {
+      "title": "Brand",
+      "description": "Product brands/manufacturers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "logo": { "type": "string", "format": "uri" },
+        "description": { "type": "string" },
+        "descRu": { "type": "string" },
+        "descAm": { "type": "string" },
+        "descEn": { "type": "string" },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "productCount": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product classification",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "nameRu": { "type": "string" },
+        "nameAm": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "slug": { "type": "string" },
+        "icon": { "type": "string" },
+        "image": { "type": "string", "format": "uri" },
+        "parentCategoryId": { "type": "string" },
+        "description": { "type": "string" },
+        "descRu": { "type": "string" },
+        "descAm": { "type": "string" },
+        "descEn": { "type": "string" },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "productCount": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Main product entity",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "model": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "brandId": { "type": "string" },
+        "storeId": { "type": "string" },
+        "image": { "type": "string", "format": "uri" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "mainPrice": { "type": "number" },
+        "bestStoreName": { "type": "string" },
+        "bestStoreLogo": { "type": "string", "format": "uri" },
+        "storeCount": { "type": "number" },
+        "specifications": { "type": "object", "additionalProperties": { "type": "string" } },
+        "sourceUrl": { "type": "string", "format": "uri" },
+        "isWarranty": { "type": "boolean" },
+        "discount": { "type": "number" },
+        "isVisible": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "searchKeywords": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name"]
+    },
+    "Offer": {
+      "title": "Offer",
+      "description": "Price offer from a specific store for a product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "storeId": { "type": "string" },
+        "price": { "type": "number" },
+        "model": { "type": "string" },
+        "currency": { "type": "string", "enum": ["AMD", "USD", "RUB"] },
+        "url": { "type": "string", "format": "uri" },
+        "availability": { "type": "string" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "storeId", "price", "currency", "url"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Home page promotional banners",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string", "format": "uri" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "link": { "type": "string" },
+        "order": { "type": "number" },
+        "textColor": { "type": "string" },
+        "fontSize": { "type": "string" },
+        "textAlign": { "type": "string", "enum": ["left", "right", "center"] },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "buttonText": { "type": "string" },
+        "buttonUrl": { "type": "string" },
+        "hasPage": { "type": "boolean" },
+        "pageContent": { "type": "string" }
+      }
+    },
+    "User": {
+      "title": "User",
+      "description": "System users and profiles",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "age": { "type": "number" },
+        "role": { "type": "string", "enum": ["admin", "partner", "user"] },
+        "status": { "type": "string", "enum": ["active", "blocked", "pending"] },
+        "ipAddress": { "type": "string" },
+        "partnerId": { "type": "string" },
+        "balance": { "type": "number" },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role", "status"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Enterprise partner entity",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "adminId": { "type": "string" },
+        "logo": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["pending", "active", "suspended"] },
+        "balance": { "type": "number" },
+        "verificationStatus": { "type": "string", "enum": ["unverified", "pending", "verified"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "BannerOrder": {
+      "title": "Banner Order",
+      "description": "Order for a promotional banner by a partner",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "bannerId": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "videoUrl": { "type": "string", "format": "uri" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "duration": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "active", "expired"] },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "price": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial records for partners",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "type": { "type": "string", "enum": ["deposit", "withdrawal", "payment"] },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PartnerMessage": {
+      "title": "Partner Message",
+      "description": "Private messages between admin and partner",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "fileUrl": { "type": "string", "format": "uri" },
+        "voiceUrl": { "type": "string", "format": "uri" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ChatRoom": {
+      "title": "Chat Room",
+      "description": "Messaging container between partner and admin",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "SupportTicket": {
+      "title": "Support Ticket",
+      "description": "Support request from partner",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "subject": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed", "in-progress"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PartnerAnalytics": {
+      "title": "Partner Analytics",
+      "description": "Performance metrics for partner campaigns",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "bannerId": { "type": "string" },
+        "views": { "type": "number" },
+        "clicks": { "type": "number" },
+        "ctr": { "type": "number" },
+        "earnings": { "type": "number" },
+        "date": { "type": "string", "format": "date" }
+      }
+    },
+    "SystemStatus": {
+      "title": "System Status",
+      "description": "Global application state",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AdminChat": {
+      "title": "Admin Chat",
+      "description": "Real-time communication for admins",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PriceAlert": {
+      "title": "Price Alert",
+      "description": "User subscription for price drop notifications",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "targetPrice": { "type": "number" },
+        "currentPrice": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "triggeredAt": { "type": "string", "format": "date-time" },
+        "lastKnownPrice": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["productId", "userId", "email", "targetPrice"]
+    },
+    "PriceHistory": {
+      "title": "Price History",
+      "description": "Historical price data for a product",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "minPrice": { "type": "number" },
+        "avgPrice": { "type": "number" }
+      }
+    },
+    "Translation": {
+      "title": "Translation",
+      "description": "Site-wide translations",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "category": { "type": "string" },
+        "am": { "type": "string" },
+        "ru": { "type": "string" },
+        "en": { "type": "string" }
+      },
+      "required": ["key", "am", "ru", "en"]
+    },
+    "Settings": {
+      "title": "Global Settings",
+      "description": "Configuration like exchange rates",
+      "type": "object",
+      "properties": {
+        "rub_to_amd": { "type": "number" },
+        "usd_to_amd": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FooterSection": {
+      "title": "Footer Section",
+      "description": "Column in the footer",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "order": { "type": "number" },
+        "settings": { "type": "object" }
+      },
+      "required": ["title", "order"]
+    },
+    "FooterLink": {
+      "title": "Footer Link",
+      "description": "Link inside a footer section",
+      "type": "object",
+      "properties": {
+        "sectionId": { "type": "string" },
+        "label": { "type": "string" },
+        "url": { "type": "string" },
+        "type": { "type": "string", "enum": ["internal", "page", "external"] },
+        "order": { "type": "number" }
+      },
+      "required": ["sectionId", "label", "url", "type", "order"]
+    },
+    "ContentPage": {
+      "title": "Content Page",
+      "description": "Dynamic CMS page",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content"]
+    },
+    "SupportMessage": {
+      "title": "Support Message",
+      "description": "Messages between users and tech support",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "text", "isAdmin"]
+    },
+    "FooterSettings": {
+      "title": "Footer Settings",
+      "description": "Global footer configuration",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "copyright": { "type": "string" }
+      }
+    },
+    "GlobalSettings": {
+      "title": "Global Settings",
+      "description": "Global visuals like logo and colors",
+      "type": "object",
+      "properties": {
+        "logoText": { "type": "string" },
+        "logoSuffix": { "type": "string" },
+        "logoSubtitle": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "secondaryColor": { "type": "string" },
+        "headerBgColor": { "type": "string" },
+        "headerTextColor": { "type": "string" },
+        "headerTextSize": { "type": "number" },
+        "headerIcon": { "type": "string" },
+        "logoType": { "type": "string", "enum": ["emoji", "image"] },
+        "logoEmoji": { "type": "string" },
+        "logoImageUrl": { "type": "string" },
+        "dropdownBgColor": { "type": "string" },
+        "dropdownTextColor": { "type": "string" },
+        "dropdownHoverColor": { "type": "string" },
+        "showTopSearch": { "type": "boolean" },
+        "showHeaderControls": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "AdminNote": {
+      "title": "Admin Note",
+      "description": "Professional notes and task organizer for admins",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["pending", "completed", "urgent"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "blocks": { "type": "array" }
+      },
+      "required": ["title", "content", "status"]
+    },
+    "SyncSettings": {
+      "title": "Sync Settings",
+      "description": "Configuration for automated price synchronization",
+      "type": "object",
+      "properties": {
+        "scheduleTime": { "type": "string" },
+        "scheduleDay": { "type": "string" },
+        "frequency": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/global_settings/{id}": {
+      "schema": "GlobalSettings",
+      "description": "Global branding and style settings"
+    },
+    "/footer_settings/{id}": {
+      "schema": "FooterSettings",
+      "description": "Global footer text and logo"
+    },
+    "/stores/{storeId}": {
+      "schema": "Store",
+      "description": "Collection of stores"
+    },
+    "/brands/{brandId}": {
+      "schema": "Brand",
+      "description": "Collection of brands"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Collection of categories"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products"
+    },
+    "/products/{productId}/offers/{offerId}": {
+      "schema": "Offer",
+      "description": "Offers for a specific product"
+    },
+    "/banners/{bannerId}": {
+      "schema": "Banner",
+      "description": "Promotional banners"
+    },
+    "/price_alerts/{alertId}": {
+      "schema": "PriceAlert",
+      "description": "Price drop alerts"
+    },
+    "/products/{productId}/price_history/{historyId}": {
+      "schema": "PriceHistory",
+      "description": "Historical price points for charts"
+    },
+    "/translations/{translationId}": {
+      "schema": "Translation",
+      "description": "UI translations"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and permissions"
+    },
+    "/system_status/{id}": {
+      "schema": "SystemStatus",
+      "description": "Global status and maintenance mode"
+    },
+    "/admin_chat/{messageId}": {
+      "schema": "AdminChat",
+      "description": "Internal admin messaging"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "App configuration"
+    },
+    "/footer_sections/{sectionId}": {
+      "schema": "FooterSection",
+      "description": "Footer columns"
+    },
+    "/footer_links/{linkId}": {
+      "schema": "FooterLink",
+      "description": "Links within footer columns"
+    },
+    "/content_pages/{pageId}": {
+      "schema": "ContentPage",
+      "description": "Dynamic static pages"
+    },
+    "/support_messages/{messageId}": {
+      "schema": "SupportMessage",
+      "description": "Customer support messages"
+    },
+    "/admin_notes/{noteId}": {
+      "schema": "AdminNote",
+      "description": "Admin dashboard notes"
+    },
+    "/partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Partner corporate entities"
+    },
+    "/banner_orders/{orderId}": {
+      "schema": "BannerOrder",
+      "description": "Partner banner requests"
+    },
+    "/partner_transactions/{txId}": {
+      "schema": "Transaction",
+      "description": "Partner financial ledger"
+    },
+    "/chat_rooms/{roomId}": {
+      "schema": "ChatRoom",
+      "description": "Partner-Admin chat threads"
+    },
+    "/chat_rooms/{roomId}/messages/{msgId}": {
+      "schema": "PartnerMessage",
+      "description": "Individual messages in a room"
+    },
+    "/partner_tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Partner support requests"
+    },
+    "/partner_analytics/{analyticsId}": {
+      "schema": "PartnerAnalytics",
+      "description": "Partner performance tracking"
+    },
+    "/settings/sync": {
+      "schema": "SyncSettings",
+      "description": "Configuration for automated price sync"
+    }
+  }
+}

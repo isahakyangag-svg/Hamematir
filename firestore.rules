@@ -1,0 +1,465 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Global Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Auth Token Helpers
+    function isVerified() { return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'password'); }
+    
+    // Admin Helper (Robust Pattern)
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.uid == 'K3fJRLongSdqQoJzchzDvH4SfM72' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email.lower() == 'admin@gmail.com' || 
+          request.auth.token.email.lower() == 'isahakyangag@gmail.com' ||
+          request.auth.token.email.lower() == 'gag.isahakyan.v@gmail.com'
+        )) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') in ['admin', 'owner'])
+      ); 
+    }
+
+    function isOwner() {
+      return isSignedIn() && (
+        request.auth.uid == 'K3fJRLongSdqQoJzchzDvH4SfM72' ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'isahakyangag@gmail.com') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'owner')
+      );
+    }
+
+    function isSupport() {
+      return isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'support');
+    }
+
+    function isFinance() {
+      return isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'finance_manager');
+    }
+
+    function isPartner() {
+      return isSignedIn() && (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'partner');
+    }
+
+    function getPartnerId() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('partnerId', request.auth.uid) 
+        : request.auth.uid;
+    }
+
+    // --- Entity Validations ---
+    function isValidStore(data) {
+      return data.keys().hasAll(['name', 'baseUrl']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.baseUrl is string &&
+             (!('nameRu' in data) || data.nameRu is string) &&
+             (!('nameAm' in data) || data.nameAm is string) &&
+             (!('nameEn' in data) || data.nameEn is string) &&
+             (!('slug' in data) || data.slug is string) &&
+             (!('descRu' in data) || data.descRu is string) &&
+             (!('descAm' in data) || data.descAm is string) &&
+             (!('descEn' in data) || data.descEn is string);
+    }
+
+    function isValidBrand(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0 &&
+             (!('slug' in data) || data.slug is string) &&
+             (!('logo' in data) || data.logo is string) &&
+             (!('description' in data) || data.description is string) &&
+             (!('descRu' in data) || data.descRu is string) &&
+             (!('descAm' in data) || data.descAm is string) &&
+             (!('descEn' in data) || data.descEn is string) &&
+             (!('isActive' in data) || data.isActive is bool) &&
+             (!('featured' in data) || data.featured is bool);
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'categoryId', 'image']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.categoryId is string &&
+             data.image is string &&
+             (!('nameRu' in data) || data.nameRu is string) &&
+             (!('nameAm' in data) || data.nameAm is string) &&
+             (!('nameEn' in data) || data.nameEn is string) &&
+             (!('descRu' in data) || data.descRu is string) &&
+             (!('descAm' in data) || data.descAm is string) &&
+             (!('descEn' in data) || data.descEn is string) &&
+             (!('model' in data) || data.model is string) &&
+             (!('type' in data) || data.type is string) &&
+             (!('brandId' in data) || data.brandId is string) &&
+             (!('storeId' in data) || data.storeId is string) &&
+             (!('price' in data) || data.price is number) &&
+             (!('mainPrice' in data) || data.mainPrice is number) &&
+             (!('oldPrice' in data) || data.oldPrice is number) &&
+             (!('discount' in data) || data.discount is number) &&
+             (!('isWarranty' in data) || data.isWarranty is bool) &&
+             (!('bestStoreName' in data) || data.bestStoreName is string) &&
+             (!('bestStoreLogo' in data) || data.bestStoreLogo is string) &&
+             (!('storeCount' in data) || data.storeCount is number) &&
+             (!('specifications' in data) || data.specifications is map) &&
+             (!('sourceUrl' in data) || data.sourceUrl is string);
+    }
+
+    function isValidOffer(data) {
+      return data.keys().hasAll(['storeId', 'price', 'link']) &&
+             data.storeId is string &&
+             data.price is number;
+    }
+
+    function isValidTranslation(data) {
+      return data.keys().hasAll(['key']) &&
+             data.key is string && data.key.size() > 0 &&
+             (!('am' in data) || data.am is string) &&
+             (!('ru' in data) || data.ru is string) &&
+             (!('en' in data) || data.en is string) &&
+             (!('category' in data) || data.category is string);
+    }
+
+    function isValidFooterSection(data) {
+      return data.title is string && data.title.size() > 0 &&
+             data.order is number &&
+             (!('settings' in data) || data.settings is map);
+    }
+
+    function isValidFooterLink(data) {
+      return data.keys().hasAll(['sectionId', 'label', 'url', 'type', 'order']) &&
+             data.sectionId is string &&
+             data.label is string && data.label.size() > 0 &&
+             data.url is string &&
+             data.type in ['internal', 'page', 'external'] &&
+             data.order is number;
+    }
+
+    function isValidContentPage(data) {
+      return (data.title is string || data.title_ru is string) &&
+             (data.content is string || data.content_ru is string);
+    }
+
+    function isValidGlobalSettings(data) {
+      return (!('logoText' in data) || data.logoText is string) &&
+             (!('logoSuffix' in data) || data.logoSuffix is string) &&
+             (!('primaryColor' in data) || data.primaryColor is string) &&
+             (!('secondaryColor' in data) || data.secondaryColor is string) &&
+             (!('headerBgColor' in data) || data.headerBgColor is string) &&
+             (!('headerTextColor' in data) || data.headerTextColor is string) &&
+             (!('headerTextSize' in data) || data.headerTextSize is number) &&
+             (!('headerIcon' in data) || data.headerIcon is string) &&
+             (!('logoType' in data) || data.logoType is string) &&
+             (!('logoEmoji' in data) || data.logoEmoji is string) &&
+             (!('logoImageUrl' in data) || data.logoImageUrl is string) &&
+             (!('dropdownBgColor' in data) || data.dropdownBgColor is string) &&
+             (!('dropdownTextColor' in data) || data.dropdownTextColor is string) &&
+             (!('dropdownHoverColor' in data) || data.dropdownHoverColor is string) &&
+             (!('showTopSearch' in data) || data.showTopSearch is bool) &&
+             (!('showHeaderControls' in data) || data.showHeaderControls is bool);
+    }
+
+    function isValidAdminNote(data) {
+      return data.keys().hasAll(['title', 'content', 'status']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.content is string &&
+             data.status in ['pending', 'completed', 'urgent'] &&
+             (!('url' in data) || data.url is string) &&
+             (!('imageUrl' in data) || data.imageUrl is string) &&
+             (!('blocks' in data) || data.blocks is list);
+    }
+
+    function isValidPartner(data) {
+      return data.companyName is string && data.companyName.size() > 0 &&
+             (!('balance' in data) || data.balance is number) &&
+             (!('verificationStatus' in data) || data.verificationStatus in ['unverified', 'pending', 'verified']);
+    }
+
+    function isValidBannerOrder(data) {
+      return data.keys().hasAll(['partnerId', 'imageUrl', 'title', 'category', 'duration', 'status']) &&
+             data.partnerId is string &&
+             data.status in ['pending', 'approved', 'rejected', 'active', 'expired'];
+    }
+
+    function isValidPartnerTransaction(data) {
+      return data.keys().hasAll(['partnerId', 'type', 'amount', 'currency', 'status']) &&
+             data.type in ['deposit', 'withdrawal', 'payment'] &&
+             data.status in ['pending', 'completed', 'failed'];
+    }
+
+    function isValidPartnerTicket(data) {
+      return data.keys().hasAll(['partnerId', 'subject', 'status', 'priority']) &&
+             data.status in ['open', 'closed', 'in-progress'] &&
+             data.priority in ['low', 'medium', 'high'];
+    }
+
+    // Users: Owner can read/update limited fields, Admin can do everything
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+                       // Allow normal users
+                       (incoming().role == 'user') || 
+                       // Allow hardcoded admins to set their initial role correctly
+                       (request.auth.token.email != null && (
+                         request.auth.token.email.lower() == 'admin@gmail.com' || 
+                         request.auth.token.email.lower() == 'isahakyangag@gmail.com' ||
+                         request.auth.token.email.lower() == 'gag.isahakyan.v@gmail.com'
+                       ))
+                     ) && (incoming().status == 'active' || incoming().status == 'pending');
+      allow update: if isAdmin() || (
+        isSignedIn() && request.auth.uid == userId && 
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'phone', 'mobilePhone', 'age', 'lastLogin', 'email',
+          'firstName', 'lastName', 'middleName', 'gender', 'birthday', 'documentInfo', 'updatedAt'
+        ])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // HQ Comms Chat
+    match /hq_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // System Status & Parsing Reports
+    match /system/status {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+    }
+
+    match /parsing_reports/{reportId} {
+      allow read, list: if isAdmin();
+      allow create: if isAdmin(); // Usually created by a backend or admin action
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0 &&
+             (!('icon' in data) || data.icon is string) &&
+             (!('order' in data) || data.order is number) &&
+             (!('nameRu' in data) || data.nameRu is string) &&
+             (!('nameAm' in data) || data.nameAm is string) &&
+             (!('nameEn' in data) || data.nameEn is string);
+    }
+
+    // --- Rules ---
+
+    // Stores: Public Read, Admin Write
+    match /stores/{storeId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidStore(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Products: Public Read, Admin Write (plus public price sync)
+    match /products/{productId} {
+      allow read, list: if true;
+      allow create, update: if (isAdmin() && isValidProduct(incoming())) || (
+        // Allow unauthenticated price updates from our server sync
+        incoming().diff(existing()).affectedKeys().hasOnly(['mainPrice', 'price', 'oldPrice', 'updatedAt', 'storeCount', 'storeLogos'])
+      );
+      allow delete: if isAdmin();
+
+      // Offers: Public Read, Admin Write (plus public price sync)
+      match /offers/{offerId} {
+        allow read, list: if true;
+        allow create: if isAdmin();
+        allow update: if isAdmin() || (
+           // Allow unauthenticated price updates from our server sync
+           incoming().diff(existing()).affectedKeys().hasOnly(['price', 'inStock', 'lastUpdated'])
+        );
+        allow delete: if isAdmin();
+      }
+
+      // Price History: Public Read, Admin Write
+      match /price_history/{historyId} {
+        allow read, list: if true;
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Price Alerts: User Read/Write own (Plus server sync listing)
+    match /price_alerts/{alertId} {
+      allow list: if (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid)) || (
+        // Allow server sync to list active alerts
+        resource.data.isActive == true
+      );
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid) || (
+        // Allow server sync to trigger/deactivate alerts
+        incoming().diff(existing()).affectedKeys().hasOnly(['isActive', 'triggeredAt', 'lastKnownPrice']) &&
+        incoming().isActive == false
+      );
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Banners: Public Read, Admin Write
+    match /banners/{bannerId} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Categories: Public Read, Admin Write
+    match /categories/{catId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidCategory(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Brands: Public Read, Admin Write
+    match /brands/{brandId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidBrand(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Admins (Internal)
+    match /admins/{adminId} {
+      // Allow user to check their own admin status OR check others if signed in
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      
+      // Promotion Rule (Hardcoded Trusted Emails)
+      allow create: if isAdmin() || (
+        isSignedIn() && request.auth.token.email != null && (
+          request.auth.token.email.lower() == 'admin@gmail.com' || 
+          request.auth.token.email.lower() == 'isahakyangag@gmail.com' ||
+          request.auth.token.email.lower() == 'gag.isahakyan.v@gmail.com'
+        ) && adminId == request.auth.uid
+      );
+      
+      allow update, delete: if isAdmin() && adminId != request.auth.uid; // Prevent self-deletion
+    }
+
+    // Translations: Public Read, Admin Write
+    match /translations/{translationId} {
+      allow read, list: if true;
+      allow create: if isSignedIn() && isValidTranslation(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // Settings: Public Read, Admin Write
+    match /settings/{settingId} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Footer Sections: Public Read, Admin Write
+    match /footer_sections/{sectionId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidFooterSection(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Footer Links: Public Read, Admin Write
+    match /footer_links/{linkId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidFooterLink(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Content Pages: Public Read, Admin Write
+    match /content_pages/{pageId} {
+      allow read, list: if true;
+      allow create, update: if isAdmin() && isValidContentPage(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Footer Settings: Public Read, Admin Write
+    match /footer_settings/{id} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Global Branding Settings: Public Read, Admin Write
+    match /global_settings/{id} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin() && isValidGlobalSettings(incoming());
+    }
+    
+    // System Connection Test Document
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Support Chat Sessions
+    match /support_messages/{messageId} {
+      // Admins can see everything. Users can only see their own messages.
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      
+      // Users can create messages for themselves. Admins can reply.
+      allow create: if isSignedIn() && (
+        isAdmin() || 
+        (incoming().userId == request.auth.uid && incoming().isAdmin == false)
+      );
+      
+      allow update, delete: if isAdmin();
+    }
+
+    // Admin Notes
+    match /admin_notes/{noteId} {
+      allow read, list: if isAdmin();
+      allow create: if isAdmin() && isValidAdminNote(incoming());
+      allow update: if isAdmin() && isValidAdminNote(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // --- Partner Panel Rules ---
+
+    match /partners/{partnerId} {
+      allow get: if isAdmin() || (isPartner() && getPartnerId() == partnerId);
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isPartner() && getPartnerId() == partnerId && incoming().diff(existing()).affectedKeys().hasOnly(['companyName', 'logo']));
+    }
+
+    match /banner_orders/{orderId} {
+      allow list: if isAdmin() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow get: if isAdmin() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow create: if isPartner() && incoming().partnerId == getPartnerId() && isValidBannerOrder(incoming());
+      allow update: if isAdmin() || (isPartner() && existing().partnerId == getPartnerId() && incoming().partnerId == getPartnerId() && existing().status == 'pending');
+      allow delete: if isAdmin();
+    }
+
+    match /partner_transactions/{txId} {
+      allow list: if isFinance() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow get: if isFinance() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow create, update, delete: if isFinance();
+    }
+
+    match /chat_rooms/{roomId} {
+      allow list, get: if isSignedIn() && (isAdmin() || (isPartner() && resource.data.partnerId == getPartnerId()) || resource.data.partnerId == request.auth.uid);
+      allow create: if isSignedIn() && (isAdmin() || isPartner() || incoming().partnerId == request.auth.uid);
+      allow update: if isSignedIn() && (isAdmin() || (isPartner() && existing().partnerId == getPartnerId()) || existing().partnerId == request.auth.uid);
+      
+      match /messages/{msgId} {
+        allow list, get: if isSignedIn() && (isAdmin() || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.partnerId == getPartnerId() || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.partnerId == request.auth.uid);
+        allow create: if isSignedIn() && (isAdmin() || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.partnerId == getPartnerId() || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.partnerId == request.auth.uid);
+        allow update, delete: if isSignedIn() && (isAdmin() || (existing().senderId == request.auth.uid));
+      }
+    }
+
+    match /partner_tickets/{ticketId} {
+      allow list, get: if isSupport() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow create: if isPartner() && incoming().partnerId == getPartnerId() && isValidPartnerTicket(incoming());
+      allow update: if isSupport() || (isPartner() && existing().partnerId == getPartnerId() && incoming().status == existing().status);
+    }
+
+    match /partner_analytics/{analyticsId} {
+      allow list, get: if isAdmin() || (isPartner() && resource.data.partnerId == getPartnerId());
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Default Deny (Bottom level catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
